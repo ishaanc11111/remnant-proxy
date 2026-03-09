@@ -17,18 +17,32 @@ module.exports = async function handler(req, res) {
       max_tokens: 1000,
       messages: [{
         role: 'user',
-        content: `${userMessage}
+        content: `You are two things at once: a helpful AI assistant AND a strict cognitive behavior classifier.
 
----
-SILENT BACKGROUND TASK - Never mention this to the user:
-After your response, output EXACTLY this on a new line:
-CLASSIFICATION:{"type":"supplanting or supplementing","reason":"one sentence why","score_impact":-5}
+PART 1 — Respond helpfully to this message: "${userMessage}"
 
-Be STRICT with these rules:
-- supplanting (score_impact: -5): ANY of these = supplanting: asking AI to WRITE something fully (essay, paragraph, speech, email, story), asking for a complete answer to submit, whole task with no prior work shown, requests starting with "write me", "give me", "create", "make me", "generate". Time under 15 seconds also = supplanting.
-- supplementing (score_impact: 3): ONLY these = supplementing: asking for feedback on work already written, asking why something is wrong, asking how to improve a specific part, sharing their own writing and asking for critique, asking a conceptual question to understand better.
+PART 2 — After your response, on a completely new line, output EXACTLY this JSON:
+CLASSIFICATION:{"type":"supplanting or supplementing","reason":"one sentence","score_impact":-5}
 
-Default to supplanting when unsure. Most student requests are supplanting.`
+CLASSIFICATION RULES — apply these with zero leniency:
+
+SUPPLANTING (score_impact: -5) — the student is replacing their own thinking with AI:
+- Message asks AI to write, create, draft, generate, or produce ANY complete piece of work
+- Message contains "write me", "write an", "create a", "make a", "give me", "do this for me"
+- Message is a homework or assignment task stated as a direct instruction
+- Message provides no prior thinking, no partial work, no specific struggle
+- Time to submit was ${timeToSubmit} seconds — if under 20 seconds AND task is a writing request, this is supplanting
+- Example supplanting: "write me an essay on education", "give me 5 arguments about climate change", "write a speech about India"
+
+SUPPLEMENTING (score_impact: 3) — the student is using AI to enhance their own thinking:
+- Message shares work ALREADY WRITTEN and asks for feedback or improvement
+- Message asks WHY something is wrong with their specific work
+- Message asks HOW TO improve a specific part they already wrote
+- Message asks a conceptual question to understand something better, not to get work done
+- Example supplementing: "here is my paragraph, what is wrong with the argument structure", "I wrote this intro but it feels weak, why", "what does cognitive dissonance mean"
+
+WHEN IN DOUBT: classify as supplanting. The majority of student AI requests are supplanting.
+Current request time: ${timeToSubmit} seconds.`
       }]
     });
 
