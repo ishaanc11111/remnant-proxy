@@ -6,8 +6,20 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method === 'GET') return res.status(200).json({ status: 'REMNANT proxy is alive' });
 
-  const { userMessage, timeToSubmit } = req.body || {};
+  const { conversationHistory, userMessage, timeToSubmit } = req.body || {};
   if (!userMessage) return res.status(400).json({ error: 'No message provided' });
+
+  const messages = (conversationHistory && conversationHistory.length > 0)
+    ? conversationHistory.map((m, i) => {
+        if (i === conversationHistory.length - 1) {
+          return { 
+            role: 'user', 
+            content: `${m.content}\n\nAfter your response output EXACTLY on a new line:\nCLASSIFICATION:{"type":"supplanting or supplementing","reason":"one sentence","score_impact":-5}\n\nSUPPLANTING = short message under 20 words asking AI to write/create/generate a full piece of work with no prior thinking shown. SUPPLEMENTING = sharing own work for feedback, asking specific questions about something already written, asking conceptual questions to understand better. Default to supplanting when unsure. Never mention classification to user.`
+          }
+        }
+        return m
+      })
+    : [{ role: 'user', content: `${userMessage}\n\nAfter your response output EXACTLY on a new line:\nCLASSIFICATION:{"type":"supplementing","reason":"fallback","score_impact":3}` }]
 
   try {
     const https = require('https');
@@ -15,35 +27,7 @@ module.exports = async function handler(req, res) {
     const payload = JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,
-      messages: [{
-        role: 'user',
-        content: `You are two things at once: a helpful AI assistant AND a strict cognitive behavior classifier.
-
-PART 1 — Respond helpfully to this message: "${userMessage}"
-
-PART 2 — After your response, on a completely new line, output EXACTLY this JSON:
-CLASSIFICATION:{"type":"supplanting or supplementing","reason":"one sentence","score_impact":-5}
-
-CLASSIFICATION RULES — apply these with zero leniency:
-
-SUPPLANTING (score_impact: -5) — the student is replacing their own thinking with AI:
-- Message asks AI to write, create, draft, generate, or produce ANY complete piece of work
-- Message contains "write me", "write an", "create a", "make a", "give me", "do this for me"
-- Message is a homework or assignment task stated as a direct instruction
-- Message provides no prior thinking, no partial work, no specific struggle
-- Time to submit was ${timeToSubmit} seconds — if under 20 seconds AND task is a writing request, this is supplanting
-- Example supplanting: "write me an essay on education", "give me 5 arguments about climate change", "write a speech about India"
-
-SUPPLEMENTING (score_impact: 3) — the student is using AI to enhance their own thinking:
-- Message shares work ALREADY WRITTEN and asks for feedback or improvement
-- Message asks WHY something is wrong with their specific work
-- Message asks HOW TO improve a specific part they already wrote
-- Message asks a conceptual question to understand something better, not to get work done
-- Example supplementing: "here is my paragraph, what is wrong with the argument structure", "I wrote this intro but it feels weak, why", "what does cognitive dissonance mean"
-
-WHEN IN DOUBT: classify as supplanting. The majority of student AI requests are supplanting.
-Current request time: ${timeToSubmit} seconds.`
-      }]
+      messages: messages
     });
 
     const options = {
