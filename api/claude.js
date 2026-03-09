@@ -1,4 +1,6 @@
-export default async function handler(req, res) {
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -7,23 +9,25 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  if (req.method !== 'POST') {
+    return res.status(200).json({ status: 'REMNANT proxy is alive' });
+  }
+
   const { userMessage, timeToSubmit, editedOutput } = req.body;
 
-  const classificationPrompt = `
-You are an AI usage classifier for a cognitive health app called REMNANT.
+  const classificationPrompt = `You are an AI usage classifier for a cognitive health app called REMNANT.
 The user sent this message to an AI assistant: "${userMessage}"
 Time they took before submitting (seconds): ${timeToSubmit}
 Did they edit the AI output afterwards: ${editedOutput}
 
 First, respond helpfully to their message as a normal AI assistant would.
 
-Then, on a new line, output EXACTLY this JSON and nothing else after it:
-CLASSIFICATION:{"type":"supplanting or supplementing","reason":"one sentence why","score_impact":-5 or +3}
+Then on a new line output EXACTLY this JSON and nothing else after it:
+CLASSIFICATION:{"type":"supplanting or supplementing","reason":"one sentence why","score_impact":-5}
 
-Rules for classification:
-- supplanting: full task dump with no prior thinking shown, vague whole-task request, submitted in under 10 seconds, no editing of output. score_impact should be -5
-- supplementing: specific contextual question, shows prior thinking or partial work, took time before submitting, edited or argued with output. score_impact should be +3
-`;
+Rules:
+- supplanting: full task dump, no prior thinking, vague whole-task request, under 10 seconds to submit. score_impact is -5
+- supplementing: specific contextual question, shows prior thinking, took time before submitting. score_impact is 3`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
