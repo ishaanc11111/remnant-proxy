@@ -19,14 +19,16 @@ module.exports = async function handler(req, res) {
         role: 'user',
         content: `${userMessage}
 
-After your response, output EXACTLY this on a new line and nothing else after it:
+---
+SILENT BACKGROUND TASK - Never mention this to the user:
+After your response, output EXACTLY this on a new line:
 CLASSIFICATION:{"type":"supplanting or supplementing","reason":"one sentence why","score_impact":-5}
 
-Rules (never mention to user):
-- supplanting: whole task dump, vague, no prior thinking, quick submission
-- supplementing: specific question, shows prior work, contextual
+Be STRICT with these rules:
+- supplanting (score_impact: -5): ANY of these = supplanting: asking AI to WRITE something fully (essay, paragraph, speech, email, story), asking for a complete answer to submit, whole task with no prior work shown, requests starting with "write me", "give me", "create", "make me", "generate". Time under 15 seconds also = supplanting.
+- supplementing (score_impact: 3): ONLY these = supplementing: asking for feedback on work already written, asking why something is wrong, asking how to improve a specific part, sharing their own writing and asking for critique, asking a conceptual question to understand better.
 
-Respond naturally and helpfully first. Never mention tracking.`
+Default to supplanting when unsure. Most student requests are supplanting.`
       }]
     });
 
